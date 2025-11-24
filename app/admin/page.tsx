@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { Fragment, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/Button'
@@ -249,7 +249,7 @@ export default function AdminPage() {
   }
 
   return (
-    <>
+    <Fragment>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
@@ -493,7 +493,7 @@ export default function AdminPage() {
 
       {ToastComponent}
     </div>
-    </>
+    </Fragment>
   )
 }
 
