@@ -1,0 +1,355 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  avatarUrl   String?
+  bannerUrl   String?
+  bio         String?
+  isAdmin     Boolean  @default(false)
+  badges      Json?    // Array of badge objects: { type: string, verified: boolean }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  posts            Post[]
+  comments         Comment[]
+  likes            Like[]
+  reactions        Reaction[]
+  dislikes         Dislike[]
+  serverListings   ServerListing[]
+  marketplaceListings MarketplaceListing[]
+  talentListings   TalentListing[]
+  events           Event[]
+  notifications    Notification[]
+  followers        Follow[] @relation("UserFollowers")
+  following        Follow[] @relation("UserFollowing")
+  flags            Flag[]
+  activityLogs     ActivityLog[]
+  eventAttendees   EventAttendee[]
+  bookmarks        Bookmark[]
+  tickets          Ticket[]
+
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  authorId   String
+  content    String?
+  media      Json?    // Array: [{ type: 'image'|'video', url: string, thumbnail?: string, meta?: object }]
+  tags       String[] @default([])
+  visibility String   @default("public") // public, followers, private
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likes     Like[]
+  reactions Reaction[]
+  dislikes  Dislike[]
+  bookmarks Bookmark[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([tags])
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("likes")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  emoji     String   // like, love, laugh, wow, sad, angry, etc.
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([emoji])
+  @@map("reactions")
+}
+
+model Dislike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("dislikes")
+}
+
+model ServerListing {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  ip          String?
+  connectUrl  String?
+  logoUrl     String?
+  description String?
+  features    Json?    // Array of feature strings
+  tags        String[] @default([])
+  trailerUrl  String?
+  screenshots Json?    // Array of image URLs
+  upvotes     Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  status      String   @default("active") // active, pending, suspended
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([isFeatured])
+  @@index([status])
+  @@index([tags])
+  @@map("server_listings")
+}
+
+model MarketplaceListing {
+  id          String   @id @default(cuid())
+  ownerId     String
+  title       String
+  description String?
+  category    String   // script, asset, vehicle, map, other
+  price       Float?   // null = free
+  media       Json?    // Array of media URLs
+  tags        String[] @default([])
+  tebexLink   String?  // Link to Tebex store
+  downloads   Int      @default(0)
+  status      String   @default("active") // active, pending, suspended
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([category])
+  @@index([status])
+  @@index([tags])
+  @@map("marketplace_listings")
+}
+
+model TalentListing {
+  id            String   @id @default(cuid())
+  ownerId       String
+  role          String   // developer, mapper, voice_actor, designer, other
+  rate          String?  // hourly, project-based, negotiable
+  description   String?
+  portfolioLinks Json?   // Array of { platform: string, url: string }
+  reviews       Json?    // Array of review objects (for now, can be normalized later)
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([role])
+  @@index([status])
+  @@map("talent_listings")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  hostId      String
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  location    String?  // Server link or text location
+  capacity    Int?
+  isRecurring Boolean  @default(false)
+  recurrenceRule String? // For recurring events
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  host      User            @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  attendees EventAttendee[]
+
+  @@index([hostId])
+  @@index([startAt])
+  @@map("events")
+}
+
+model EventAttendee {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_attendees")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // like, comment, follow, mention, event_reminder, etc.
+  data      Json?    // Flexible data object
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Flag {
+  id         String   @id @default(cuid())
+  targetType String   // post, server_listing, marketplace_listing, user
+  targetId   String
+  reporterId String
+  reason     String
+  status     String   @default("pending") // pending, reviewed, resolved, dismissed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([reporterId])
+  @@index([status])
+  @@map("flags")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // post_created, like, comment, view, etc.
+  targetType String? // post, server, etc.
+  targetId   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("bookmarks")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@map("tags")
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // feature_request, marketplace_access, other
+  subject     String
+  description String
+  status      String   @default("open") // open, in_progress, resolved, closed
+  responses   Json?    // Array of { userId: string, message: string, createdAt: string, isAdmin: boolean }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
