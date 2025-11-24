@@ -12,6 +12,7 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
+    "make-admin": "tsx scripts/make-admin.ts",
     "db:studio": "prisma studio",
     "type-check": "tsc --noEmit",
     "postinstall": "prisma generate"

@@ -6,6 +6,21 @@ async function makeAdmin() {
   const email = 'kingroyalt.vu@gmail.com'
 
   try {
+    // First, remove admin status from all other users
+    const removedAdmins = await prisma.user.updateMany({
+      where: {
+        email: { not: email },
+        isAdmin: true,
+      },
+      data: {
+        isAdmin: false,
+      },
+    })
+    
+    if (removedAdmins.count > 0) {
+      console.log(`✅ Removed admin status from ${removedAdmins.count} other user(s)`)
+    }
+
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: { email },
@@ -30,6 +45,10 @@ async function makeAdmin() {
       })
       console.log(`✅ User ${updatedUser.username} (${updatedUser.email}) is now an admin!`)
     }
+
+    console.log(`\n🎉 Setup complete! You are now the only admin and owner.`)
+    console.log(`   Email: ${email}`)
+    console.log(`   Owner status is automatically granted based on your email.`)
   } catch (error) {
     console.error('Error making user admin:', error)
     process.exit(1)
