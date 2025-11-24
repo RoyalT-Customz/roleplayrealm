@@ -292,7 +292,7 @@ export default function AdminPage() {
               <div className="mt-4 space-y-2">
                 <div className="flex gap-2 flex-wrap">
                   {server.status === 'pending' && (
-                    <>
+                    <Fragment>
                       <Button
                         variant="primary"
                         size="sm"
@@ -307,7 +307,7 @@ export default function AdminPage() {
                       >
                         Reject
                       </Button>
-                    </>
+                    </Fragment>
                   )}
                   {server.status === 'active' && (
                     <Button
@@ -379,7 +379,7 @@ export default function AdminPage() {
                         <span>{formatRelativeTime(ticket.createdAt)}</span>
                       </div>
 
-                      {ticket.responses && Array.isArray(ticket.responses) && ticket.responses.length > 0 ? (
+                      {ticket.responses && Array.isArray(ticket.responses) && ticket.responses.length > 0 && (
                         <div className="mb-4 pt-4 border-t border-dark-700">
                           <h4 className="text-sm font-semibold mb-2">Responses:</h4>
                           <div className="space-y-2">
