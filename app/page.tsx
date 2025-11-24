@@ -28,8 +28,11 @@ export default function HomePage() {
       <section className="bg-gradient-to-br from-dark-800 via-dark-900 to-dark-800 border-b border-dark-700">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
               Roleplay Realm
+              <span className="text-sm font-semibold bg-primary-600/20 text-primary-400 px-3 py-1 rounded-full border border-primary-600/30">
+                beta
+              </span>
             </h1>
             <p className="text-xl text-dark-300 mb-8">
               Your FiveM Community Hub - Discover Servers, Share Content, Connect with Players
