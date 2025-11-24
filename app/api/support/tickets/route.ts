@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         subject: subject.trim(),
         description: description.trim(),
         status: 'open',
-        responses: null, // Start with null, will be array when responses are added
+        responses: [], // Start with empty array
       },
       include: {
         user: {

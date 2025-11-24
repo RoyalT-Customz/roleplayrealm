@@ -21,11 +21,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let posts, total
+    let posts: any[] = []
+    let total = 0
     
     try {
       // Try with all counts including reactions and dislikes
-      [posts, total] = await Promise.all([
+      const result = await Promise.all([
         prisma.post.findMany({
           where,
           include: {
@@ -53,10 +54,12 @@ export async function GET(request: NextRequest) {
         }),
         prisma.post.count({ where }),
       ])
+      posts = result[0]
+      total = result[1]
     } catch (error: any) {
       // Fallback if Prisma Client is outdated - use basic counts only
       console.warn('Error fetching with reactions/dislikes, falling back to basic counts:', error.message)
-      [posts, total] = await Promise.all([
+      const result = await Promise.all([
         prisma.post.findMany({
           where,
           include: {
@@ -82,6 +85,8 @@ export async function GET(request: NextRequest) {
         }),
         prisma.post.count({ where }),
       ])
+      posts = result[0]
+      total = result[1]
       
       // Add default values for reactions and dislikes
       posts = posts.map((post: any) => ({

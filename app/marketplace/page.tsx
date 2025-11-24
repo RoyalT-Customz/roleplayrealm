@@ -193,7 +193,9 @@ export default function MarketplacePage() {
                 {canDelete && (
                   <div
                     className="absolute top-4 right-4 z-10 marketplace-menu-container"
-                    ref={(el) => (menuRefs.current[listing.id] = el)}
+                    ref={(el) => {
+                      menuRefs.current[listing.id] = el
+                    }}
                   >
                     <button
                       onClick={(e) => {
