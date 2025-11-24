@@ -6,6 +6,34 @@ import { rateLimit } from '@/lib/rate-limit'
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
+    const serverId = searchParams.get('id')
+
+    // If ID is provided, return single server (for detail page)
+    if (serverId) {
+      const server = await prisma.serverListing.findUnique({
+        where: { id: serverId },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      })
+
+      if (!server) {
+        return NextResponse.json(
+          { error: 'Server not found' },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json({ server })
+    }
+
+    // Otherwise, return paginated list
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const tags = searchParams.get('tags')?.split(',') || []
