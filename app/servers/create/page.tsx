@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -12,7 +12,7 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 
 export default function CreateServerPage() {
   const router = useRouter()
-  const { user, isConfigured } = useAuth()
+  const { user, isConfigured, loading: authLoading } = useAuth()
   const { showToast, ToastComponent } = useToast()
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -25,8 +25,13 @@ export default function CreateServerPage() {
     features: '',
   })
 
-  if (!user || !isConfigured) {
-    router.push('/auth/signin')
+  useEffect(() => {
+    if (!authLoading && (!user || !isConfigured)) {
+      router.push('/auth/signin')
+    }
+  }, [user, isConfigured, authLoading, router])
+
+  if (authLoading || !user || !isConfigured) {
     return null
   }
 

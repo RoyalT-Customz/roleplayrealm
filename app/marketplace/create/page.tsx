@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Image as ImageIcon, Video, X, Hash } from 'lucide-react'
@@ -11,7 +11,7 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 
 export default function CreateMarketplacePage() {
   const router = useRouter()
-  const { user, isConfigured } = useAuth()
+  const { user, isConfigured, loading: authLoading } = useAuth()
   const { showToast, ToastComponent } = useToast()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -26,8 +26,13 @@ export default function CreateMarketplacePage() {
     tebexLink: '',
   })
 
-  if (!user || !isConfigured) {
-    router.push('/auth/signin')
+  useEffect(() => {
+    if (!authLoading && (!user || !isConfigured)) {
+      router.push('/auth/signin')
+    }
+  }, [user, isConfigured, authLoading, router])
+
+  if (authLoading || !user || !isConfigured) {
     return null
   }
 
