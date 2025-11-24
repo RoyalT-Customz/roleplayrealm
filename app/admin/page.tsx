@@ -6,7 +6,7 @@ import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/Button'
 import { ServerCard } from '@/components/servers/ServerCard'
 import { useToast } from '@/components/ui/Toast'
-import { MessageSquare, CheckCircle, Clock, XCircle, Send } from 'lucide-react'
+import { MessageSquare, CheckCircle, Clock, XCircle, Send, Trash2 } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 
 interface Server {
@@ -115,9 +115,34 @@ export default function AdminPage() {
         setServers((prev) =>
           prev.map((s) => (s.id === serverId ? { ...s, status } : s))
         )
+        showToast('Server status updated!', 'success')
       }
     } catch (error) {
       console.error('Error updating server status:', error)
+      showToast('Failed to update server status', 'error')
+    }
+  }
+
+  const deleteServer = async (serverId: string, serverName: string) => {
+    if (!confirm(`Are you sure you want to delete "${serverName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/servers?serverId=${serverId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setServers((prev) => prev.filter((s) => s.id !== serverId))
+        showToast('Server deleted successfully!', 'success')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to delete server')
+      }
+    } catch (error: any) {
+      console.error('Error deleting server:', error)
+      showToast(error.message || 'Failed to delete server', 'error')
     }
   }
 
@@ -318,6 +343,15 @@ export default function AdminPage() {
                       {server.isFeatured ? 'Unfeature' : 'Feature'}
                     </Button>
                   )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => deleteServer(server.id, server.name)}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-1 text-xs rounded ${

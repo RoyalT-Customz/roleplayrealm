@@ -146,3 +146,77 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if user is admin
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email! },
+    })
+
+    if (!dbUser || !dbUser.isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const serverId = searchParams.get('serverId')
+
+    if (!serverId) {
+      return NextResponse.json(
+        { error: 'Missing serverId parameter' },
+        { status: 400 }
+      )
+    }
+
+    // Check if server exists
+    const server = await prisma.serverListing.findUnique({
+      where: { id: serverId },
+    })
+
+    if (!server) {
+      return NextResponse.json(
+        { error: 'Server not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the server listing
+    await prisma.serverListing.delete({
+      where: { id: serverId },
+    })
+
+    // Log admin activity
+    await prisma.activityLog.create({
+      data: {
+        userId: dbUser.id,
+        action: 'server_deleted',
+        targetType: 'server_listing',
+        targetId: serverId,
+        metadata: {
+          description: `Admin deleted server "${server.name}" by user ${server.ownerId}`,
+        },
+      },
+    })
+
+    return NextResponse.json({ success: true, message: 'Server deleted successfully' })
+  } catch (error: any) {
+    console.error('Error deleting server:', error)
+    return NextResponse.json(
+      { 
+        error: 'Failed to delete server',
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: 500 }
+    )
+  }
+}
+
