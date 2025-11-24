@@ -18,6 +18,7 @@ model User {
   bannerUrl   String?
   bio         String?
   isAdmin     Boolean  @default(false)
+  hasMarketplaceAccess Boolean @default(false) // Admin-controlled access to post in marketplace
   badges      Json?    // Array of badge objects: { type: string, verified: boolean }
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

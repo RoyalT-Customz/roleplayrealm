@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
       bannerUrl: dbUser.bannerUrl,
       bio: dbUser.bio,
       isAdmin: dbUser.isAdmin,
+      hasMarketplaceAccess: dbUser.hasMarketplaceAccess,
       badges: dbUser.badges,
       createdAt: dbUser.createdAt,
       updatedAt: dbUser.updatedAt,

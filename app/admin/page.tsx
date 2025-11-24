@@ -47,7 +47,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [ticketsLoading, setTicketsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [activeTab, setActiveTab] = useState<'servers' | 'tickets'>('servers')
+  const [activeTab, setActiveTab] = useState<'servers' | 'tickets' | 'marketplace'>('servers')
+  const [marketplaceUsers, setMarketplaceUsers] = useState<any[]>([])
+  const [marketplaceLoading, setMarketplaceLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
   const [responseText, setResponseText] = useState('')
   const [responding, setResponding] = useState(false)
@@ -171,6 +174,7 @@ export default function AdminPage() {
       checkAdmin()
       fetchServers()
       fetchTickets()
+      fetchMarketplaceUsers()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, router])
@@ -217,6 +221,48 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error updating ticket status:', error)
       showToast('Failed to update ticket status', 'error')
+    }
+  }
+
+  const fetchMarketplaceUsers = async () => {
+    try {
+      setMarketplaceLoading(true)
+      const url = searchQuery
+        ? `/api/admin/marketplace-access?search=${encodeURIComponent(searchQuery)}`
+        : '/api/admin/marketplace-access'
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        setMarketplaceUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching marketplace users:', error)
+    } finally {
+      setMarketplaceLoading(false)
+    }
+  }
+
+  const updateMarketplaceAccess = async (userId: string, hasAccess: boolean) => {
+    try {
+      const response = await fetch('/api/admin/marketplace-access', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, hasMarketplaceAccess: hasAccess }),
+      })
+
+      if (response.ok) {
+        showToast(
+          hasAccess ? 'Marketplace access granted!' : 'Marketplace access revoked!',
+          'success'
+        )
+        fetchMarketplaceUsers()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to update access')
+      }
+    } catch (error: any) {
+      console.error('Error updating marketplace access:', error)
+      showToast(error.message || 'Failed to update marketplace access', 'error')
     }
   }
 
@@ -304,6 +350,19 @@ export default function AdminPage() {
               {tickets.filter((t) => t.status === 'open').length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('marketplace')
+            fetchMarketplaceUsers()
+          }}
+          className={`px-4 py-2 font-semibold transition-colors ${
+            activeTab === 'marketplace'
+              ? 'text-primary-400 border-b-2 border-primary-400'
+              : 'text-dark-400 hover:text-white'
+          }`}
+        >
+          Marketplace Access
         </button>
       </div>
 
@@ -515,6 +574,94 @@ export default function AdminPage() {
                             </Button>
                           )}
                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'marketplace' && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Marketplace Access Management</h2>
+          <p className="text-dark-400 mb-6">
+            Grant or revoke access to users who want to post items in the marketplace. This feature will soon be available as a paid subscription.
+          </p>
+
+          <div className="mb-6">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchMarketplaceUsers()
+                }
+              }}
+              placeholder="Search by email or username..."
+              className="input max-w-md"
+            />
+            <Button
+              onClick={fetchMarketplaceUsers}
+              variant="secondary"
+              size="sm"
+              className="ml-2"
+            >
+              Search
+            </Button>
+          </div>
+
+          {marketplaceLoading ? (
+            <div className="text-center py-12">
+              <div className="text-dark-400">Loading users...</div>
+            </div>
+          ) : marketplaceUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-dark-400">No users found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {marketplaceUsers.map((marketplaceUser) => (
+                <div key={marketplaceUser.id} className="card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <h3 className="font-semibold text-lg">{marketplaceUser.username}</h3>
+                        <p className="text-sm text-dark-400">{marketplaceUser.email}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-dark-400">
+                            {marketplaceUser._count.marketplaceListings} listing(s)
+                          </span>
+                          {marketplaceUser.isAdmin && (
+                            <span className="px-2 py-0.5 bg-primary-900/30 text-primary-400 text-xs rounded">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className={`px-3 py-1 text-sm rounded ${
+                        marketplaceUser.hasMarketplaceAccess
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-red-900/30 text-red-400'
+                      }`}>
+                        {marketplaceUser.hasMarketplaceAccess ? 'Has Access' : 'No Access'}
+                      </span>
+                      {!marketplaceUser.isAdmin && (
+                        <Button
+                          variant={marketplaceUser.hasMarketplaceAccess ? 'secondary' : 'primary'}
+                          size="sm"
+                          onClick={() => updateMarketplaceAccess(
+                            marketplaceUser.id,
+                            !marketplaceUser.hasMarketplaceAccess
+                          )}
+                        >
+                          {marketplaceUser.hasMarketplaceAccess ? 'Revoke Access' : 'Grant Access'}
+                        </Button>
                       )}
                     </div>
                   </div>

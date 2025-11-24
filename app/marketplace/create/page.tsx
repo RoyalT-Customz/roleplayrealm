@@ -15,6 +15,8 @@ export default function CreateMarketplacePage() {
   const { showToast, ToastComponent } = useToast()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [media, setMedia] = useState<any[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
@@ -29,11 +31,61 @@ export default function CreateMarketplacePage() {
   useEffect(() => {
     if (!authLoading && (!user || !isConfigured)) {
       router.push('/auth/signin')
+      return
+    }
+
+    // Check marketplace access
+    if (user && isConfigured) {
+      fetch('/api/profile')
+        .then((res) => res.json())
+        .then((data) => {
+          setIsAdmin(data.isAdmin || false)
+          setHasAccess(data.isAdmin || data.hasMarketplaceAccess || false)
+        })
+        .catch(() => {
+          setHasAccess(false)
+        })
     }
   }, [user, isConfigured, authLoading, router])
 
-  if (authLoading || !user || !isConfigured) {
-    return null
+  if (authLoading || !user || !isConfigured || hasAccess === null) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <div className="text-dark-400">Loading...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <Link href="/marketplace" className="inline-flex items-center gap-2 text-dark-400 hover:text-white mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Marketplace
+          </Link>
+          <div className="card text-center">
+            <h1 className="text-3xl font-bold mb-4">Marketplace Access Required</h1>
+            <p className="text-dark-300 mb-6">
+              You need admin approval to post items in the marketplace. This feature will soon be available as a paid subscription.
+            </p>
+            <p className="text-dark-400 mb-6">
+              Please contact an admin or submit a support ticket to request marketplace access.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Link href="/support">
+                <Button>Request Access</Button>
+              </Link>
+              <Link href="/marketplace">
+                <Button variant="secondary">Browse Marketplace</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const categories = ['script', 'asset', 'vehicle', 'map', 'other']

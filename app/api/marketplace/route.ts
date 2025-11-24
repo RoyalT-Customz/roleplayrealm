@@ -96,6 +96,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Check if user has marketplace access (admins always have access)
+    if (!dbUser.isAdmin && !dbUser.hasMarketplaceAccess) {
+      return NextResponse.json(
+        { error: 'Marketplace access required. Please contact an admin to request access.' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { title, description, category, price, media, tags, tebexLink } = body
 
